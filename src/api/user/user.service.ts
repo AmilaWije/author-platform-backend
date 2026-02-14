@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/config/prisma/prisma.service';
+import { LoginUserData } from './dto/user-request-dto';
+import { JwtAuthService } from 'src/config/jwt/jwt.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly DB: PrismaService){}
+  constructor(private readonly DB: PrismaService, private readonly jwt: JwtAuthService){}
 
   async create(userData: CreateUserDto) {
     try {
@@ -37,6 +39,22 @@ export class UserService {
       success: true,
       message: 'All users Feeded',
       data: allUsers
+    }
+  }
+
+  async login(userLoginData: LoginUserData) {
+    try {
+      const user = await this.DB.user.findUnique({
+        where: {
+          username:userLoginData.username
+        }
+      });
+      if(!user) throw new NotFoundException(`${userLoginData.username} not found`);
+      if(userLoginData.password !== user.password)throw new BadRequestException(`password`);
+      return this.jwt.gettoken();
+    } catch (e) {
+      if(e instanceof HttpException) throw e;
+      throw new InternalServerErrorException('Internal server error exception');
     }
   }
 
