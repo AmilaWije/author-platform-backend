@@ -6,10 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { LoginUserData } from './dto/user-request-dto';
 
 @Controller('user')
 export class UserController {
@@ -23,6 +26,12 @@ export class UserController {
   @Post('register')
   register(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  login(@Body() loginUserData: LoginUserData) {
+    return this.userService.login(loginUserData);
   }
 
   @Get()
