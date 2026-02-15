@@ -33,6 +33,17 @@ model Book {
   summary String?
   userId Int
   user User @relation(fields: [userId], references: [id])
+  documents Document[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id Int @default(autoincrement()) @id
+  file_name String
+  file_path String
+  book_id Int
+  book Book @relation(fields: [book_id], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
