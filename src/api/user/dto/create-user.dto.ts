@@ -5,6 +5,8 @@ export class CreateUserDto {
     password: string;
     email: string;
     country: string;
+    role?: 'Author' | 'Buyer' | 'Publisher';
+    walletId: string;
     createdAt: string;
     updatedAt: string;
 }

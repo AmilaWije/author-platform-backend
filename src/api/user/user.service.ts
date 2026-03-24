@@ -19,7 +19,9 @@ export class UserService {
           username: true,
           password: true,
           email: true,
-          country: true
+          country: true,
+          role: true,
+          walletId: true
         }
       });
       return {
