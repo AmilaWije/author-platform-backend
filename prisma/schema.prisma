@@ -28,8 +28,15 @@ model User {
   email String @unique
   country String?
   role Role @default(Author)
-  books Book[]
   walletId String @unique
+
+  books Book[]
+
+  authoredAgreements Agreement[] @relation("AuthorAgreements")
+  publishedAgreements Agreement[] @relation("PublisherAgreements")
+
+  signatures Signature[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -42,6 +49,7 @@ model Book {
   userId Int
   user User @relation(fields: [userId], references: [id])
   documents Document[]
+  agreements Agreement[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -52,6 +60,60 @@ model Document {
   file_path String
   book_id Int
   book Book @relation(fields: [book_id], references: [id])
+  agreements Agreement[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum AgreementStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Agreement {
+  id Int @id @default(autoincrement())
+
+  title String
+  description String?
+
+  authorId Int
+  publisherId Int
+
+  author User @relation("AuthorAgreements", fields: [authorId], references: [id])
+  publisher User @relation("PublisherAgreements", fields: [publisherId], references: [id])
+
+  bookId Int
+  book Book @relation(fields: [bookId], references: [id])
+
+  documentId Int?
+  document Document? @relation(fields: [documentId], references: [id])
+
+  status AgreementStatus @default(DRAFT)
+
+  contractData Json?   // agreement content
+  blockchainAddress String? // future
+
+  pdfPath String?
+
+  signatures Signature[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Signature {
+  id Int @id @default(autoincrement())
+
+  agreementId Int
+  userId Int
+
+  agreement Agreement @relation(fields: [agreementId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  signed Boolean @default(false)
+  signedAt DateTime?
+
+  createdAt DateTime @default(now())
 }

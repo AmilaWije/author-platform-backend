@@ -27,6 +27,7 @@
     "@nestjs/platform-express": "^11.1.13",
     "@prisma/client": "^6.19.2",
     "multer": "^2.0.2",
+    "pdfkit": "^0.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
