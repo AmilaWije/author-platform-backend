@@ -5,5 +5,8 @@ export class CreateAgreementDto {
     publisherId: number;
     bookId: number;
     documentId?: number;
+    blockchainAddress?: string;
+    amount: number;
+    endDate: string;
     contractData?: any;
 }
