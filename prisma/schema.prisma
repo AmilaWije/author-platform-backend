@@ -93,10 +93,12 @@ model Agreement {
   status AgreementStatus @default(DRAFT)
 
   contractData Json?   // agreement content
+  amount Float // digital agreement amount
+  startDate DateTime @default(now()) // agreement valid date
+  endDate DateTime
   blockchainAddress String? // future
 
   pdfPath String?
-
   signatures Signature[]
 
   createdAt DateTime @default(now())
