@@ -24,7 +24,8 @@ export class BookService {
         data: createdBook
       }
     } catch (e) {
-      throw new BadRequestException(e);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new BadRequestException(message);
     }
   }
 

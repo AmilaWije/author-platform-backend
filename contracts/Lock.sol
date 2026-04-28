@@ -8,42 +8,38 @@ contract PublishingAgreement {
 
     uint public amount;
     uint public endTime;
+    uint public authorShare; // percentage e.g. 70 means 70% goes to author
 
-    bool public isPaid;
     bool public isReleased;
 
-    constructor(address _author, address _publisher, uint _duration, uint _amount) payable {
+    constructor(address _author, address _publisher, uint _duration, uint _amount, uint _authorShare) payable {
+      require(_authorShare <= 100, "Author share cannot exceed 100%");
       author = _author;
       publisher = _publisher;
       endTime = block.timestamp + _duration;
       amount = _amount;
-      isPaid = true;
+      authorShare = _authorShare;
+      isReleased = false;
     }
 
-    // Buyer pays money
+    // Anyone can pay into the agreement (buyers, additional payments)
     function payAgreement() external payable {
-        require(!isPaid, "Already paid");
         require(msg.value > 0, "Amount required");
-
-        amount = msg.value;
-        isPaid = true;
     }
 
-    // Release funds after expiry
+    // Release funds after expiry with revenue split between author and publisher
     function releaseFunds() external {
         require(block.timestamp >= endTime, "Not expired yet");
-        require(isPaid, "Payment not done");
         require(!isReleased, "Already released");
+        require(address(this).balance > 0, "No funds to release");
 
         isReleased = true;
 
-        payable(author).transfer(address(this).balance);
-    }
+        uint totalBalance = address(this).balance;
+        uint authorAmount = (totalBalance * authorShare) / 100;
+        uint publisherAmount = totalBalance - authorAmount;
 
-    function pay() external payable {
-        require(!isPaid, "Already paid");
-        require(msg.value > 0, "Amount required");
-
-        isPaid = true;
+        payable(author).transfer(authorAmount);
+        payable(publisher).transfer(publisherAmount);
     }
 }

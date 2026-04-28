@@ -6,7 +6,6 @@ import { Agreement } from './entities/agreement.entity';
 import { generateAgreementPDF } from 'utils/pdf-generator';
 import { deployContract, payAgreement } from 'blockchain/blockchain.service';
 import { ethers } from 'ethers';
-import { stringify } from 'querystring';
 
 @Injectable()
 export class AgreementService {
@@ -85,24 +84,29 @@ export class AgreementService {
         select: { privateKey: true },
       }))!.privateKey;
       // deploy contract using web3 or ethers
-      const duration = BigInt(
-        Math.floor((new Date(dto.endDate).getTime() - Date.now()) / 1000),
+      // Use minimum duration of 1 second for expired dates (Ganache testing)
+      // The scheduler will advance Ganache's clock via evm_increaseTime
+      const durationSeconds = Math.floor(
+        (new Date(dto.endDate).getTime() - Date.now()) / 1000,
       );
+      const duration = BigInt(Math.max(durationSeconds, 1));
       // const duration = Math.floor((new Date(dto.endDate).getTime() - Date.now()) / 1000).toString;
       const amount = ethers.parseEther(agreement.amount.toString());
       const contractAddress = await deployContract(
         authorWallet,
-        String(authorPriKey), // address
+        String(authorPriKey),
         publisherWallet,
-        String(publisherPriKey), // address
+        String(publisherPriKey),
         String(duration),
-        amount
+        amount,
+        70, // author gets 70%, publisher gets 30%
       );
-      // update agreement after excuting agreement in the chain
+      // update agreement after deploying contract on the chain
       await this.DB.agreement.update({
         where: { id: agreement.id },
         data: {
           blockchainAddress: String(contractAddress),
+          status: 'APPROVED',
         },
       });
 
@@ -112,13 +116,13 @@ export class AgreementService {
         data: agreement,
       };
     } catch (e) {
-      throw new BadRequestException(e);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new BadRequestException(message);
     }
   }
 
   async payAgreement(agreementId: number, buyerPrivateKey: string) {
     const privateKey = buyerPrivateKey?.trim().replace(/['"]/g, '');
-    console.log('Private Key'+privateKey); 
 
     if (
       !privateKey ||

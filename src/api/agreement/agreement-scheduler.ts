@@ -2,84 +2,68 @@ import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { releaseFunds } from 'blockchain/blockchain.service';
-import { provider } from 'blockchain/ethers.providers';
 
 @Injectable()
 export class AgreementScheduler {
   constructor(private DB: PrismaService) {}
 
-  // runs every minute
   @Cron('* * * * *')
   async handleExpiredAgreements() {
     console.log('-----Cron is Running-----');
-    const block = await provider.getBlock('latest');
-    const blockchainTime = Number(block?.timestamp);
-    // add 2 minutes (120 seconds)
-    const sample = new Date((blockchainTime + 120) * 1000).toISOString();
-    console.log(sample);
 
     const now = new Date();
-    const isoDate = new Date(now).toISOString();
+    console.log('Current time (local):', now.toLocaleString());
+    console.log('Current time (UTC):', now.toISOString());
 
+    // Fetch all APPROVED agreements with a blockchain address (include publisher private key for gas)
     const agreements = await this.DB.agreement.findMany({
       where: {
-        status: 'PENDING',
-        // endDate: { lte: isoDate }, // ✅ ONLY expired
+        status: 'APPROVED',
         blockchainAddress: { not: null },
+      },
+      include: {
+        publisher: {
+          select: { privateKey: true },
+        },
       },
     });
 
-    // Identify exceeded agreement
-    console.log(agreements.length);
+    // Debug: log how dates are being interpreted
+    for (const a of agreements) {
+      const endDate = new Date(a.endDate);
+      console.log(`Agreement ${a.id}: endDate(DB)=${a.endDate}, endDate(JS)=${endDate.toISOString()}, endDate(Local)=${endDate.toLocaleString()}, now=${now.toISOString()}`);
+    }
 
-    const nowSeconds = Math.floor(Date.now() / 1000);
+    // Compare using local time strings to avoid UTC/local mismatch
+    const expiredAgreements = agreements.filter((a) => {
+      const endDate = new Date(a.endDate);
+      // Treat the DB date as local time by parsing its local components
+      const endDateLocal = new Date(
+        endDate.getFullYear(),
+        endDate.getMonth(),
+        endDate.getDate(),
+        endDate.getHours(),
+        endDate.getMinutes(),
+        endDate.getSeconds(),
+      );
+      return endDateLocal <= now;
+    });
 
-    for (const agreement of agreements) {
+    console.log(`Found ${expiredAgreements.length} expired agreements (out of ${agreements.length} total APPROVED)`);
+
+    for (const agreement of expiredAgreements) {
       try {
-        const endTimeSeconds = Math.floor(
-          new Date(agreement.endDate).getTime() / 1000,
-        );
-
-        console.log('now', nowSeconds);
-        console.log('DB end', endTimeSeconds);
-
-        // if (nowSeconds < endTimeSeconds) {
-        //   console.log('Not expired from agreement scheduler check');
-        //   continue;
-        // }
-
-        await releaseFunds(agreement.blockchainAddress!);
-        console.log({
-          id: agreement.id,
-          dbEndDate: agreement.endDate,
-          dbEndSeconds: Math.floor(
-            new Date(agreement.endDate).getTime() / 1000,
-          ),
-          nowSeconds,
-        });
+        await releaseFunds(agreement.blockchainAddress!, agreement.publisher.privateKey ?? undefined);
 
         await this.DB.agreement.update({
           where: { id: agreement.id },
           data: { status: 'COMPLETED' },
         });
+
+        console.log(`Agreement ${agreement.id} completed and funds released`);
       } catch (e) {
-        console.error('Release failed:', e);
+        console.error(`Release failed for agreement ${agreement.id}:`, e);
       }
     }
-
-    // for (const agreement of agreements) {
-    //   try {
-    //     console.log('Now:', isoDate);
-    //     console.log('EndDate:', agreement.endDate);
-    //     await releaseFunds(agreement.blockchainAddress!);
-
-    //     await this.DB.agreement.update({
-    //       where: { id: agreement.id },
-    //       data: { status: 'COMPLETED' },
-    //     });
-    //   } catch (e) {
-    //     console.error('Release failed:', e);
-    //   }
-    // }
   }
 }

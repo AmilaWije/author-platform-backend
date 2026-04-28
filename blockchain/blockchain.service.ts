@@ -1,8 +1,5 @@
 import { ethers } from 'ethers';
-// import * as LockArtifact from '../artifacts/contracts/Lock.sol/PublishingAgreement.json';
-// const abi = LockArtifact.abi;
 import PublishingAgreementArtifact from '../artifacts/contracts/Lock.sol/PublishingAgreement.json';
-import { validateHeaderValue } from 'http';
 
 const provider = new ethers.JsonRpcProvider('http://127.0.0.1:7545');
 const abi = PublishingAgreementArtifact.abi;
@@ -14,15 +11,15 @@ export const deployContract = async (
   publisherPriKey: string,
   duration: string,
   amount: bigint,
+  authorShare: number = 70,
 ) => {
   console.log('Author:', authorAddress);
   console.log('Publisher:', publisherAddress);
   console.log('Duration:', duration);
+  console.log('Author Share:', authorShare + '%');
   const privateKey = publisherPriKey;
   const wallet = new ethers.Wallet(privateKey, provider);
-  // bytecode (from compiled contract)
   const bytecode = PublishingAgreementArtifact.bytecode;
-  // const abi = PublishingAgreementArtifact.abi;
 
   const factory = new ethers.ContractFactory(abi, bytecode, wallet);
 
@@ -31,6 +28,7 @@ export const deployContract = async (
     publisherAddress,
     BigInt(duration),
     amount,
+    authorShare,
     {
       value: amount,
     },
@@ -41,56 +39,68 @@ export const deployContract = async (
   return contract.target;
 };
 
-// export const releaseFunds = async (contractAddress: string) => {
-//   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
+export const advanceBlockchainTime = async (seconds: number) => {
+  await provider.send('evm_increaseTime', [seconds]);
+  await provider.send('evm_mine', []);
+};
 
-//   const contract = new ethers.Contract(contractAddress, abi, wallet);
-
-//   const tx = await contract.releaseFunds();
-
-//   await tx.wait();
-
-//   return tx.hash;
-// };
-
-export const releaseFunds = async (contractAddress: string) => {
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
+export const releaseFunds = async (contractAddress: string, privateKey?: string) => {
+  const key = privateKey || process.env.PRIVATE_KEY!;
+  const wallet = new ethers.Wallet(key, provider);
 
   const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-  // 🔍 Read contract state first
-  const isPaid = await contract.isPaid();
   const isReleased = await contract.isReleased();
   const endTime = await contract.endTime();
+  const author = await contract.author();
+  const publisher = await contract.publisher();
 
   const block = await provider.getBlock('latest');
   const currentTime = Number(block?.timestamp);
-  // const currentTime = Math.floor(Date.now() / 1000);
 
-  console.log('isPaid:', isPaid);
+  const getBalance = async (addr: string) => {
+    const result = await provider.send('eth_getBalance', [addr, 'latest']);
+    return ethers.formatEther(result);
+  };
+
+  console.log('--- releaseFunds Debug ---');
+  console.log('Caller wallet:', wallet.address);
+  console.log('Contract address:', contractAddress);
+  console.log('Author:', author);
+  console.log('Publisher:', publisher);
+  console.log('Contract balance:', await getBalance(contractAddress), 'ETH');
+  console.log('Author balance (before):', await getBalance(author), 'ETH');
+  console.log('Publisher balance (before):', await getBalance(publisher), 'ETH');
   console.log('isReleased:', isReleased);
-  console.log('--endTime:', endTime.toString());
+  console.log('endTime:', endTime.toString());
   console.log('currentTime:', currentTime);
-
-  // 🚫 Prevent revert errors
-  if (!isPaid) {
-    throw new Error('Payment not done');
-  }
 
   if (isReleased) {
     throw new Error('Already released');
   }
 
   if (currentTime < Number(endTime)) {
-    throw new Error('Agreement not expired yet');
+    const secondsToAdvance = Number(endTime) - currentTime;
+    console.log(`Advancing Ganache clock by ${secondsToAdvance} seconds`);
+    await advanceBlockchainTime(secondsToAdvance);
   }
 
-  // ✅ Safe to call now
   const tx = await contract.releaseFunds();
+  const receipt = await tx.wait();
 
-  await tx.wait();
+  if (receipt!.status !== 1) {
+    throw new Error('releaseFunds transaction reverted');
+  }
 
-  return tx.hash;
+  // Force mine a fresh block so provider returns updated values
+  await provider.send('evm_mine', []);
+
+  console.log('Author balance (after):', await getBalance(author), 'ETH');
+  console.log('Publisher balance (after):', await getBalance(publisher), 'ETH');
+  console.log('Contract balance (after):', await getBalance(contractAddress), 'ETH');
+  console.log('--- releaseFunds Complete ---');
+
+  return receipt!.hash;
 };
 
 export const payAgreement = async (
@@ -98,14 +108,10 @@ export const payAgreement = async (
   privateKey: string,
   amount: string,
 ) => {
-  console.log(contractAddress);
-  console.log(privateKey);
-  console.log(amount);
   const wallet = new ethers.Wallet(privateKey, provider);
 
   const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-  console.log('Calling pay...');
   console.log('Amount:', amount);
   console.log('Contract:', contractAddress);
   console.log('Wallet:', wallet.address);
@@ -114,7 +120,7 @@ export const payAgreement = async (
   console.log(ethers.formatEther(balance));
 
   try {
-    const tx = await contract.pay({
+    const tx = await contract.payAgreement({
       value: ethers.parseEther(amount),
     });
 
@@ -123,5 +129,6 @@ export const payAgreement = async (
     return tx.hash;
   } catch (e) {
     console.error('Payment failed:', e);
+    throw e;
   }
 };
