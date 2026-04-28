@@ -12,11 +12,11 @@ contract PublishingAgreement {
     bool public isPaid;
     bool public isReleased;
 
-    constructor(address _author, address _publisher, uint _duration) payable {
+    constructor(address _author, address _publisher, uint _duration, uint _amount) payable {
       author = _author;
       publisher = _publisher;
       endTime = block.timestamp + _duration;
-      amount = msg.value;
+      amount = _amount;
       isPaid = true;
     }
 
@@ -37,6 +37,13 @@ contract PublishingAgreement {
 
         isReleased = true;
 
-        payable(author).transfer(amount);
+        payable(author).transfer(address(this).balance);
+    }
+
+    function pay() external payable {
+        require(!isPaid, "Already paid");
+        require(msg.value > 0, "Amount required");
+
+        isPaid = true;
     }
 }

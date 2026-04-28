@@ -5,8 +5,9 @@ import { PrismaModule } from './config/prisma/prisma.module';
 import { JwtAuthModule } from './config/jwt/jwt.module';
 import { DocumentModule } from './api/document/document.module';
 import { AgreementModule } from './api/agreement/agreement.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [UserModule, BookModule, PrismaModule, JwtAuthModule, DocumentModule, AgreementModule],
+  imports: [UserModule, BookModule, PrismaModule, JwtAuthModule, DocumentModule, AgreementModule, ScheduleModule.forRoot()],
 })
 export class AppModule {}

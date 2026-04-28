@@ -29,6 +29,7 @@ model User {
   country String?
   role Role @default(Author)
   walletId String @unique
+  privateKey String?
 
   books Book[]
 
@@ -70,6 +71,7 @@ enum AgreementStatus {
   PENDING
   APPROVED
   REJECTED
+  COMPLETED
 }
 
 model Agreement {
