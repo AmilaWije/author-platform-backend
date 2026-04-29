@@ -12,6 +12,13 @@ export class AgreementController {
     return this.agreementService.create(createAgreementDto);
   }
 
+  @Post(':id/pay')
+  pay(
+    @Param('id') id: number,
+    @Body('privateKey') privateKey: string
+  ) {
+    return this.agreementService.payAgreement(id, privateKey);
+  }
 
   @Get()
   findAll() {

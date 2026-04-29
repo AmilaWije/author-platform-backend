@@ -26,7 +26,8 @@ export class DocumentService {
         data: createdDocuemntData
       }
     } catch (e) {
-      throw new BadRequestException(e);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new BadRequestException(message);
     }
   }
 
@@ -48,7 +49,8 @@ export class DocumentService {
         data: allDocs
       }
     } catch (e) {
-      throw new BadRequestException(e);
+      const message = e instanceof Error ? e.message : String(e);
+      throw new BadRequestException(message);
     }
   }
 

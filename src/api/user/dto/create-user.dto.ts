@@ -7,6 +7,7 @@ export class CreateUserDto {
     country: string;
     role?: 'Author' | 'Buyer' | 'Publisher';
     walletId: string;
+    privateKey: string;
     createdAt: string;
     updatedAt: string;
 }
