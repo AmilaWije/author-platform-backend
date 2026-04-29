@@ -45,7 +45,7 @@ export const advanceBlockchainTime = async (seconds: number) => {
 };
 
 export const releaseFunds = async (contractAddress: string, privateKey?: string) => {
-  const key = privateKey || process.env.PRIVATE_KEY!;
+  const key = privateKey!;
   const wallet = new ethers.Wallet(key, provider);
 
   const contract = new ethers.Contract(contractAddress, abi, wallet);
