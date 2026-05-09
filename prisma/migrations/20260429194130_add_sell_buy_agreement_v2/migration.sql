@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `agreement` ADD COLUMN `buyerId` INTEGER NULL,
+    ADD COLUMN `discountPrice` DOUBLE NULL,
+    MODIFY `status` ENUM('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'COMPLETED', 'SELLING', 'SOLD') NOT NULL DEFAULT 'DRAFT';
+
+-- AddForeignKey
+ALTER TABLE `Agreement` ADD CONSTRAINT `Agreement_buyerId_fkey` FOREIGN KEY (`buyerId`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

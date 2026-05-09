@@ -12,13 +12,11 @@ export class AgreementScheduler {
     console.log('-----Cron is Running-----');
 
     const now = new Date();
-    console.log('Current time (local):', now.toLocaleString());
-    console.log('Current time (UTC):', now.toISOString());
 
-    // Fetch all APPROVED agreements with a blockchain address (include publisher private key for gas)
+    // Fetch APPROVED and SOLD agreements with a blockchain address
     const agreements = await this.DB.agreement.findMany({
       where: {
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'SOLD'] },
         blockchainAddress: { not: null },
       },
       include: {
@@ -28,28 +26,9 @@ export class AgreementScheduler {
       },
     });
 
-    // Debug: log how dates are being interpreted
-    for (const a of agreements) {
-      const endDate = new Date(a.endDate);
-      console.log(`Agreement ${a.id}: endDate(DB)=${a.endDate}, endDate(JS)=${endDate.toISOString()}, endDate(Local)=${endDate.toLocaleString()}, now=${now.toISOString()}`);
-    }
+    const expiredAgreements = agreements.filter((a) => new Date(a.endDate) <= now);
 
-    // Compare using local time strings to avoid UTC/local mismatch
-    const expiredAgreements = agreements.filter((a) => {
-      const endDate = new Date(a.endDate);
-      // Treat the DB date as local time by parsing its local components
-      const endDateLocal = new Date(
-        endDate.getFullYear(),
-        endDate.getMonth(),
-        endDate.getDate(),
-        endDate.getHours(),
-        endDate.getMinutes(),
-        endDate.getSeconds(),
-      );
-      return endDateLocal <= now;
-    });
-
-    console.log(`Found ${expiredAgreements.length} expired agreements (out of ${agreements.length} total APPROVED)`);
+    console.log(`Found ${expiredAgreements.length} expired agreements (out of ${agreements.length} total)`);
 
     for (const agreement of expiredAgreements) {
       try {

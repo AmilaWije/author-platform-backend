@@ -109,26 +109,55 @@ export const payAgreement = async (
   amount: string,
 ) => {
   const wallet = new ethers.Wallet(privateKey, provider);
-
   const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-  console.log('Amount:', amount);
-  console.log('Contract:', contractAddress);
-  console.log('Wallet:', wallet.address);
+  const tx = await contract.payAgreement({
+    value: ethers.parseEther(amount),
+  });
 
-  const balance = await provider.getBalance(contractAddress);
-  console.log(ethers.formatEther(balance));
+  await tx.wait();
+  return tx.hash;
+};
 
-  try {
-    const tx = await contract.payAgreement({
-      value: ethers.parseEther(amount),
-    });
+export const sellAgreement = async (
+  contractAddress: string,
+  authorPrivateKey: string,
+  discountPrice: string,
+) => {
+  const wallet = new ethers.Wallet(authorPrivateKey, provider);
+  const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-    await tx.wait();
-    console.log('Payment success:', tx.hash);
-    return tx.hash;
-  } catch (e) {
-    console.error('Payment failed:', e);
-    throw e;
+  console.log('SELL: caller=', wallet.address, 'contract=', contractAddress, 'price=', discountPrice, 'ETH');
+
+  const tx = await contract.sellAgreement(ethers.parseEther(discountPrice), {
+    gasLimit: 200000,
+  });
+
+  const receipt = await tx.wait();
+  if (receipt!.status !== 1) {
+    throw new Error('sellAgreement reverted on-chain');
   }
+
+  return receipt!.hash;
+};
+
+export const buyAgreement = async (
+  contractAddress: string,
+  buyerPrivateKey: string,
+  discountPrice: string,
+) => {
+  const wallet = new ethers.Wallet(buyerPrivateKey, provider);
+  const contract = new ethers.Contract(contractAddress, abi, wallet);
+
+  const tx = await contract.buyAgreement({
+    value: ethers.parseEther(discountPrice),
+    gasLimit: 200000,
+  });
+
+  const receipt = await tx.wait();
+  if (receipt!.status !== 1) {
+    throw new Error('buyAgreement reverted on-chain');
+  }
+
+  return receipt!.hash;
 };

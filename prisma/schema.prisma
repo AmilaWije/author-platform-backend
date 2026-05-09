@@ -29,12 +29,14 @@ model User {
   country String?
   role Role @default(Author)
   walletId String @unique
+  accountAddress String?
   privateKey String?
 
   books Book[]
 
   authoredAgreements Agreement[] @relation("AuthorAgreements")
   publishedAgreements Agreement[] @relation("PublisherAgreements")
+  boughtAgreements Agreement[] @relation("BuyerAgreements")
 
   signatures Signature[]
 
@@ -72,6 +74,8 @@ enum AgreementStatus {
   APPROVED
   REJECTED
   COMPLETED
+  SELLING
+  SOLD
 }
 
 model Agreement {
@@ -86,6 +90,9 @@ model Agreement {
   author User @relation("AuthorAgreements", fields: [authorId], references: [id])
   publisher User @relation("PublisherAgreements", fields: [publisherId], references: [id])
 
+  buyerId Int?
+  buyer User? @relation("BuyerAgreements", fields: [buyerId], references: [id])
+
   bookId Int
   book Book @relation(fields: [bookId], references: [id])
 
@@ -96,6 +103,7 @@ model Agreement {
 
   contractData Json?   // agreement content
   amount Float // digital agreement amount
+  discountPrice Float?
   startDate DateTime @default(now()) // agreement valid date
   endDate DateTime
   blockchainAddress String? // future

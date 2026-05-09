@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { AgreementService } from './agreement.service';
 import { CreateAgreementDto } from './dto/create-agreement.dto';
 import { UpdateAgreementDto } from './dto/update-agreement.dto';
@@ -18,6 +18,27 @@ export class AgreementController {
     @Body('privateKey') privateKey: string
   ) {
     return this.agreementService.payAgreement(id, privateKey);
+  }
+
+  @Post(':id/sell')
+  sell(
+    @Param('id') id: number,
+    @Body('discountPrice') discountPrice: number,
+  ) {
+    return this.agreementService.sellAgreement(id, discountPrice);
+  }
+
+  @Post(':id/buy')
+  buy(
+    @Param('id') id: number,
+    @Body('buyerId') buyerId: number,
+  ) {
+    return this.agreementService.buyAgreement(id, buyerId);
+  }
+
+  @Get('available')
+  findAvailable() {
+    return this.agreementService.findAvailable();
   }
 
   @Get()
