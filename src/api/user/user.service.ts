@@ -4,6 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { LoginUserData } from './dto/user-request-dto';
 import { JwtAuthService } from 'src/config/jwt/jwt.service';
+import { ethers } from 'ethers';
 
 @Injectable()
 export class UserService {
@@ -11,8 +12,21 @@ export class UserService {
 
   async create(userData: CreateUserDto) {
     try {
+      // Derive accountAddress from privateKey if provided
+      let accountAddress: string | undefined;
+      if (userData.privateKey) {
+        try {
+          accountAddress = new ethers.Wallet(userData.privateKey).address;
+        } catch {
+          throw new BadRequestException('Invalid privateKey format');
+        }
+      }
+
       const newUser = await this.DB.user.create({
-        data: userData,
+        data: {
+          ...userData,
+          accountAddress,
+        },
         select: {
           f_name: true,
           l_name: true,
@@ -21,7 +35,8 @@ export class UserService {
           email: true,
           country: true,
           role: true,
-          walletId: true
+          walletId: true,
+          accountAddress: true,
         }
       });
       return {

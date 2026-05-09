@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\DELL\\Desktop\\CV\\MSC\\Research project\\Project\\author-platform-backend\\contracts\\Lock.sol": {
-      "lastModificationDate": 1777403861915,
-      "contentHash": "4fbd7b3624363c8a752da020fc9a0701",
+      "lastModificationDate": 1777491643938,
+      "contentHash": "d7a30da941a9ad0ed5a02f14ca29606f",
       "sourceName": "contracts/Lock.sol",
       "solcConfig": {
         "version": "0.8.28",
