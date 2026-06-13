@@ -5,11 +5,9 @@ import { JwtService } from '@nestjs/jwt';
 export class JwtAuthService {
     constructor(private readonly jwt:JwtService) {}
 
-    async gettoken() {
+    async gettoken(payload: { id: number; username: string; role: string }) {
         try {
-            const token = await this.jwt.signAsync({
-                name: 'amila'
-            });
+            const token = await this.jwt.signAsync(payload);
             return token;
         } catch (e) {
             throw new InternalServerErrorException('Internal server error');

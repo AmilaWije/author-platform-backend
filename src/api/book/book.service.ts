@@ -31,15 +31,26 @@ export class BookService {
 
   async findAll(userId: number) {
     const userBooksData = await this.DB.book.findMany({
-      where: {
-        userId: userId
-      },
+      where: { userId },
     });
-
     return {
       success: true,
       message: 'User wise data feeded succesfully',
-      data: userBooksData
+      data: userBooksData,
+    };
+  }
+
+  async findAllBooks() {
+    const books = await this.DB.book.findMany({
+      include: {
+        user: { select: { id: true, f_name: true, l_name: true, username: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return {
+      success: true,
+      message: 'All books fetched',
+      data: books,
     };
   }
 

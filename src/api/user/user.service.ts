@@ -62,16 +62,46 @@ export class UserService {
   async login(userLoginData: LoginUserData) {
     try {
       const user = await this.DB.user.findUnique({
-        where: {
-          username:userLoginData.username
-        }
+        where: { username: userLoginData.username }
       });
-      if(!user) throw new NotFoundException(`${userLoginData.username} not found`);
-      if(userLoginData.password !== user.password)throw new BadRequestException(`password`);
-      return this.jwt.gettoken();
+      if (!user) throw new NotFoundException(`${userLoginData.username} not found`);
+      if (userLoginData.password !== user.password) throw new BadRequestException('Invalid password');
+      const token = await this.jwt.gettoken({ id: user.id, username: user.username, role: user.role });
+      return {
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          f_name: user.f_name,
+          l_name: user.l_name,
+          username: user.username,
+          role: user.role,
+        },
+      };
     } catch (e) {
-      if(e instanceof HttpException) throw e;
+      if (e instanceof HttpException) throw e;
       throw new InternalServerErrorException('Internal server error exception');
+    }
+  }
+
+  async getBalance(id: number) {
+    const user = await this.DB.user.findUnique({
+      where: { id },
+      select: { accountAddress: true },
+    });
+    if (!user?.accountAddress) {
+      return { success: true, balance: '0', balanceEth: '0' };
+    }
+    try {
+      const provider = new ethers.JsonRpcProvider('http://127.0.0.1:7545');
+      const raw = await provider.getBalance(user.accountAddress);
+      return {
+        success: true,
+        balance: raw.toString(),
+        balanceEth: ethers.formatEther(raw),
+      };
+    } catch {
+      return { success: true, balance: '0', balanceEth: '0' };
     }
   }
 

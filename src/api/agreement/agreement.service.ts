@@ -330,6 +330,14 @@ export class AgreementService {
     };
   }
 
+  async getAgreementPdf(id: number): Promise<string | null> {
+    const agreement = await this.DB.agreement.findUnique({
+      where: { id },
+      select: { pdfPath: true },
+    });
+    return agreement?.pdfPath ?? null;
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} agreement`;
   }
