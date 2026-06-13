@@ -54,6 +54,13 @@ export class DocumentService {
     }
   }
 
+  async findByBookId(bookId: number) {
+    const doc = await this.DB.document.findFirst({
+      where: { book_id: bookId },
+    });
+    return { success: true, data: doc ?? null };
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} document`;
   }

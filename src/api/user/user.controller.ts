@@ -39,6 +39,11 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  @Get(':id/balance')
+  getBalance(@Param('id') id: string) {
+    return this.userService.getBalance(+id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findOne(+id);

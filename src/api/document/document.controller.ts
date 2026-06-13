@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import { join } from 'path';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -43,10 +45,21 @@ export class DocumentController {
     });
   }
 
-  // get user wise and book wise all document
+  // get user wise all documents
   @Get('get-document')
-  findAll(@Body() requestData: DocumentRequestData) {
-    return this.documentService.findAll(requestData);
+  findAll(@Query('userId') userId: string) {
+    return this.documentService.findAll({ userId: Number(userId), bookId: 0 });
+  }
+
+  @Get('by-book/:bookId')
+  findByBook(@Param('bookId') bookId: string) {
+    return this.documentService.findByBookId(Number(bookId));
+  }
+
+  // serve uploaded PDF file for preview
+  @Get('file/:filename')
+  serveFile(@Param('filename') filename: string, @Res() res: Response) {
+    res.sendFile(join(process.cwd(), 'uploads', filename));
   }
 
   // @Get(':id')

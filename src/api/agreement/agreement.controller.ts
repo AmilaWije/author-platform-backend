@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
 import { AgreementService } from './agreement.service';
 import { CreateAgreementDto } from './dto/create-agreement.dto';
 import { UpdateAgreementDto } from './dto/update-agreement.dto';
@@ -44,6 +45,13 @@ export class AgreementController {
   @Get()
   findAll() {
     return this.agreementService.findAll();
+  }
+
+  @Get(':id/pdf')
+  async servePdf(@Param('id') id: string, @Res() res: Response) {
+    const pdfPath = await this.agreementService.getAgreementPdf(+id);
+    if (!pdfPath) throw new NotFoundException('PDF not found for this agreement');
+    res.sendFile(pdfPath);
   }
 
   @Get(':id')
